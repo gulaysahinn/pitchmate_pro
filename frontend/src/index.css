@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: #0f172a; /* Koyu lacivert arka plan */
+  color: white;
+  -webkit-font-smoothing: antialiased;
+}
