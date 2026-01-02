@@ -9,6 +9,7 @@ import {
   FiMail,
   FiLock,
   FiCheck,
+  FiArrowLeft,
 } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 
@@ -40,8 +41,10 @@ const Register = () => {
         email: formData.email,
         password: formData.password,
       });
-      toast.success("Kayıt Başarılı! 🚀");
-      setTimeout(() => navigate("/login"), 1000);
+      toast.success(
+        "Kayıt Başarılı! 🚀 Giriş sayfasına yönlendiriliyorsunuz..."
+      );
+      setTimeout(() => navigate("/login"), 1500);
     } catch (error) {
       const errorMsg = error.response?.data?.detail || "Kayıt başarısız.";
       toast.error(errorMsg);
@@ -55,191 +58,209 @@ const Register = () => {
   };
 
   return (
-    <div className="flex w-full h-screen overflow-hidden bg-[#050507] font-sans relative">
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+    <div className="flex w-full min-h-screen bg-[#050507] font-sans relative text-white selection:bg-indigo-500/30">
+      {/* --- ARKA PLAN EFEKTLERİ (BLOBS) --- */}
+      <div className="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
+      <div className="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
 
-      {/* --- SOL TARAF (GÖRSEL - PUBLIC KLASÖRÜNDEN) --- */}
-      <div className="hidden lg:flex w-[55%] relative flex-col justify-center items-center z-10 bg-[#121217]/50 backdrop-blur-sm border-r border-white/5 p-12">
+      {/* --- SOL TARAF (GÖRSEL ALANI) - Sadece Büyük Ekranlar --- */}
+      <div className="flex w-[55%] relative flex-col justify-center items-center z-10 bg-[#121217]/50 backdrop-blur-sm border-r border-white/5 p-12 h-screen sticky top-0">
         <div
-          className="absolute top-12 left-12 cursor-pointer flex items-center gap-3"
+          className="absolute top-12 left-12 cursor-pointer flex items-center gap-3 group"
           onClick={() => navigate("/")}
         >
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-300">
             <span className="font-bold text-xl">P</span>
           </div>
-          <span className="text-xl font-bold text-white tracking-tight">
+          <span className="text-xl font-bold tracking-tight group-hover:text-indigo-400 transition-colors">
             PitchMate
           </span>
         </div>
 
-        {/* ORTA GÖRSEL (toplanti.png) */}
         <div className="w-full h-full flex items-center justify-center relative">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-purple-500/10 blur-[100px] rounded-full pointer-events-none"></div>
-
-          {/* 👇 BURASI DEĞİŞTİ: Direkt public'ten okuyor */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] h-[70%] bg-purple-500/10 blur-[80px] rounded-full pointer-events-none"></div>
           <img
             src="/toplanti.png"
-            alt="Toplantı Görseli"
-            className="max-w-full max-h-[80%] object-contain drop-shadow-2xl animate-float z-10"
+            alt="PitchMate Toplantı"
+            className="max-w-full max-h-[75%] object-contain drop-shadow-2xl animate-float relative z-10 hover:scale-[1.02] transition-transform duration-500"
           />
         </div>
 
         <div className="absolute bottom-12 max-w-md text-center p-6">
-          <p className="text-gray-300 text-lg font-medium italic">
-            "Potansiyelini keşfet, geleceği şekillendir."
+          <p className="text-gray-400 text-lg font-medium italic">
+            "Potansiyelini keşfet, sahnede parla."
           </p>
         </div>
       </div>
 
-      {/* --- SAĞ TARAF (FORM) --- */}
-      <div className="w-full lg:w-[45%] flex justify-center items-center relative z-10 px-8">
-        <div className="w-full max-w-[440px] p-8 my-auto overflow-y-auto custom-scrollbar max-h-screen">
-          <div
-            className="lg:hidden flex justify-center mb-8 cursor-pointer items-center gap-2"
+      {/* --- SAĞ TARAF (FORM ALANI) --- */}
+      <div className="w-full lg:w-[45%] flex flex-col justify-center items-center relative z-10 p-6 overflow-y-auto">
+        {/* Mobil Header (Geri Dön) */}
+        <div className="w-full max-w-[500px] flex justify-start mb-6 lg:hidden">
+          <button
             onClick={() => navigate("/")}
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
           >
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
-              P
-            </div>
-            <span className="text-white font-bold text-xl">PitchMate</span>
-          </div>
+            <FiArrowLeft size={20} />
+            <span>Ana Sayfa</span>
+          </button>
+        </div>
 
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">
+        {/* ✨ KUTU (CONTAINER) BURADA BAŞLIYOR ✨ */}
+        <div className="w-full max-w-[500px] bg-[#121217]/60 backdrop-blur-xl border border-white/10 rounded-3xl p-8 sm:p-10 shadow-2xl relative overflow-hidden">
+          {/* Kutunun üzerindeki hafif parlama efekti */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent opacity-50"></div>
+
+          {/* Başlık */}
+          <div className="mb-8 text-center">
+            <h2 className="text-3xl font-bold mb-2 text-white">
               Hesap Oluştur 🚀
             </h2>
-            <p className="text-gray-400">Hemen aramıza katıl.</p>
+            <p className="text-gray-400 text-sm">
+              Hemen aramıza katıl ve sunumlarını geliştirmeye başla.
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Kullanıcı Adı */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-400 ml-1">
+              <label className="text-xs font-semibold text-gray-400 ml-1 uppercase tracking-wide">
                 Kullanıcı Adı
               </label>
               <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-400 transition-colors">
-                  <FiUser size={20} />
+                  <FiUser size={18} />
                 </div>
                 <input
                   type="text"
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-4 bg-[#121217] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm group-hover:border-white/20"
+                  className="w-full pl-11 pr-4 py-3.5 bg-[#0a0a0c] border border-white/5 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 focus:bg-[#0f0f12] focus:ring-1 focus:ring-indigo-500/50 transition-all text-sm"
                   placeholder="Adınız Soyadınız"
                   required
                 />
               </div>
             </div>
 
+            {/* E-Posta */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-400 ml-1">
+              <label className="text-xs font-semibold text-gray-400 ml-1 uppercase tracking-wide">
                 E-Posta
               </label>
               <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-400 transition-colors">
-                  <FiMail size={20} />
+                  <FiMail size={18} />
                 </div>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-4 bg-[#121217] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm group-hover:border-white/20"
+                  className="w-full pl-11 pr-4 py-3.5 bg-[#0a0a0c] border border-white/5 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 focus:bg-[#0f0f12] focus:ring-1 focus:ring-indigo-500/50 transition-all text-sm"
                   placeholder="ornek@email.com"
                   required
                 />
               </div>
             </div>
 
+            {/* Şifre */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-400 ml-1">
+              <label className="text-xs font-semibold text-gray-400 ml-1 uppercase tracking-wide">
                 Şifre
               </label>
               <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-400 transition-colors">
-                  <FiLock size={20} />
+                  <FiLock size={18} />
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-12 pr-12 py-4 bg-[#121217] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm group-hover:border-white/20"
+                  className="w-full pl-11 pr-12 py-3.5 bg-[#0a0a0c] border border-white/5 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 focus:bg-[#0f0f12] focus:ring-1 focus:ring-indigo-500/50 transition-all text-sm"
                   placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors cursor-pointer"
                 >
-                  {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                 </button>
               </div>
             </div>
 
+            {/* Şifre Tekrar */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-400 ml-1">
+              <label className="text-xs font-semibold text-gray-400 ml-1 uppercase tracking-wide">
                 Şifre Tekrar
               </label>
               <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-400 transition-colors">
-                  <FiCheck size={20} />
+                  <FiCheck size={18} />
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-4 bg-[#121217] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm group-hover:border-white/20"
+                  className="w-full pl-11 pr-4 py-3.5 bg-[#0a0a0c] border border-white/5 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 focus:bg-[#0f0f12] focus:ring-1 focus:ring-indigo-500/50 transition-all text-sm"
                   placeholder="••••••••"
                   required
                 />
               </div>
             </div>
 
+            {/* Kayıt Butonu */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transform hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 mt-6 text-sm tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transform hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 mt-4 text-sm tracking-wide disabled:opacity-50 disabled:cursor-not-allowed border border-indigo-500/20"
             >
               {loading ? "Kaydediliyor..." : "KAYIT OL"}
             </button>
           </form>
 
           {/* VEYA Ayracı */}
-          <div className="relative my-8">
+          <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10"></div>
+              <div className="w-full border-t border-white/5"></div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-[#050507] text-gray-500">veya</span>
+            <div className="relative flex justify-center text-xs uppercase tracking-widest">
+              <span className="px-4 bg-[#15151a] text-gray-500 rounded-full">
+                veya
+              </span>
             </div>
           </div>
 
           {/* Google Butonu */}
           <button
             onClick={handleGoogleRegister}
-            className="w-full py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-3 active:scale-[0.98]"
+            className="w-full py-3.5 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-3 active:scale-[0.98] group"
           >
-            <FcGoogle size={24} />
-            Google ile Devam Et
+            <FcGoogle
+              size={22}
+              className="group-hover:scale-110 transition-transform"
+            />
+            <span className="text-sm">Google ile Devam Et</span>
           </button>
 
-          <div className="mt-8 text-center">
+          {/* Login Yönlendirmesi */}
+          <div className="mt-6 text-center">
             <p className="text-gray-500 text-sm">
               Zaten hesabın var mı?{" "}
               <Link
                 to="/login"
-                className="text-indigo-400 hover:text-indigo-300 font-bold hover:underline"
+                className="text-indigo-400 hover:text-indigo-300 font-bold hover:underline ml-1 transition-colors"
               >
                 Giriş Yap
               </Link>
             </p>
           </div>
         </div>
+        {/* ✨ KUTU BİTİŞİ ✨ */}
       </div>
     </div>
   );
