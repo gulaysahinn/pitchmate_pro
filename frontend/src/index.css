@@ -9,3 +9,16 @@ body {
   color: white;
   -webkit-font-smoothing: antialiased;
 }
+
+@keyframes floatY {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.animate-float {
+  animation: floatY 6s ease-in-out infinite;
+}

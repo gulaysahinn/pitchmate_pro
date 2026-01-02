@@ -1,64 +1,74 @@
-from fastapi import APIRouter, HTTPException
-import oracledb
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List
 
-# HATA ÇÖZÜMÜ: app.services yerine senin çalışan auth dosyanı kullanıyoruz
-from app.routers.auth import DB_CONFIG 
+from app import database, models, schemas, oauth2
 
 router = APIRouter(
     prefix="/dashboard",
     tags=["Dashboard"]
 )
 
-@router.get("/stats/{username}")
-def get_dashboard_stats(username: str):
-    conn = None
-    cursor = None
+# 1. Analiz Geçmişini Getir
+@router.get("/history/{username}", response_model=List[schemas.PresentationOut])
+def get_user_history(
+    username: str, 
+    db: Session = Depends(database.get_db),
+    # BURASI ÖNEMLİ: Token kontrolü yapıyoruz
+    current_user: models.User = Depends(oauth2.get_current_user) 
+):
+    # Güvenlik Kontrolü: Sadece kendi verisini görebilsin
+    if current_user.username != username:
+        raise HTTPException(status_code=403, detail="Bu veriye erişim izniniz yok.")
+
+    presentations = db.query(models.Presentation).filter(
+        models.Presentation.user_id == current_user.id
+    ).order_by(models.Presentation.created_at.desc()).all()
     
-    try:
-        # Bağlantıyı DB_CONFIG ile oluşturuyoruz
-        conn = oracledb.connect(**DB_CONFIG)
-        cursor = conn.cursor()
-        
-        # 1. Kullanıcının ID'sini bul
-        cursor.execute("SELECT id FROM users WHERE username = :username", {"username": username})
-        user_row = cursor.fetchone()
-        
-        if not user_row:
-            # Kullanıcı bulunamazsa boş değer dön
-            return {"total_presentations": 0, "average_score": 0, "total_duration_minutes": 0}
-            
-        user_id = user_row[0]
+    return presentations
 
-        # 2. İstatistikleri Hesapla (COUNT, AVG, SUM)
-        sql_stats = """
-            SELECT 
-                COUNT(*) as total_count, 
-                AVG(score) as avg_score, 
-                SUM(duration_seconds) as total_duration
-            FROM presentations 
-            WHERE user_id = :user_id
-        """
+# 2. İstatistikleri Getir (Opsiyonel, Dashboard'da kullanıyorsan)
+@router.get("/stats/{username}")
+def get_user_stats(
+    username: str,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(oauth2.get_current_user)
+):
+    if current_user.username != username:
+        raise HTTPException(status_code=403, detail="Erişim izni yok.")
         
-        cursor.execute(sql_stats, {"user_id": user_id})
-        stats_row = cursor.fetchone()
-        
-        # 3. Verileri Düzenle (Null gelirse 0 yap)
-        total_count = stats_row[0] or 0
-        avg_score = round(stats_row[1] or 0) # Virgüllü sayıyı yuvarla
-        total_duration_sec = stats_row[2] or 0
-        
-        # Saniyeyi dakikaya çevir (Örn: 150 sn -> 2.5 dk)
-        total_duration_min = round(total_duration_sec / 60, 1)
+    total_presentations = db.query(models.Presentation).filter(models.Presentation.user_id == current_user.id).count()
+    
+    # Basit bir istatistik döndür
+    return {
+        "total_presentations": total_presentations,
+        "username": current_user.username
+    }
 
-        return {
-            "total_presentations": total_count,
-            "average_score": avg_score,
-            "total_duration_minutes": total_duration_min
-        }
+# ... (Mevcut kodların altına ekle)
 
-    except Exception as e:
-        print(f"Dashboard Stats Hatası: {e}")
-        return {"total_presentations": 0, "average_score": 0, "total_duration_minutes": 0}
-    finally:
-        if cursor: cursor.close()
-        if conn: conn.close()
+# 3. Sunum Silme Endpoint'i
+@router.delete("/delete/{presentation_id}")
+def delete_presentation(
+    presentation_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(oauth2.get_current_user)
+):
+    # 1. Sunumu bul
+    presentation = db.query(models.Presentation).filter(
+        models.Presentation.id == presentation_id
+    ).first()
+
+    # 2. Sunum var mı?
+    if not presentation:
+        raise HTTPException(status_code=404, detail="Sunum bulunamadı.")
+
+    # 3. Bu sunum, silmeye çalışan kullanıcıya mı ait? (Güvenlik)
+    if presentation.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Bu sunumu silme yetkiniz yok.")
+
+    # 4. Sil ve Kaydet
+    db.delete(presentation)
+    db.commit()
+
+    return {"message": "Sunum başarıyla silindi."}

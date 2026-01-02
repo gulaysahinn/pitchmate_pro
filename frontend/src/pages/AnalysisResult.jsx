@@ -1,219 +1,211 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import AIInsightCard from "../components/AIInsightCard"; // Bu dosyanın var olduğundan emin ol
+import AICoachWidget from "../components/AICoachWidget";
+import { FiArrowLeft, FiVideo, FiMic, FiAlertTriangle } from "react-icons/fi";
 
 const AnalysisResult = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Dashboard'dan gelen veriyi al
   const result = location.state?.analysis_results;
 
-  // Veri yoksa geri gönder
   if (!result) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center">
-        <p className="mb-4">Analiz verisi bulunamadı.</p>
+      <div className="h-full w-full bg-[#09090b] text-white flex flex-col items-center justify-center p-4">
+        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+          <FiAlertTriangle size={30} className="text-yellow-500" />
+        </div>
+        <h2 className="text-xl font-bold mb-2">Veri Bulunamadı</h2>
         <button
           onClick={() => navigate("/dashboard")}
-          className="text-blue-400 hover:underline"
+          className="px-6 py-3 bg-indigo-600 rounded-xl font-medium"
         >
-          Panele Dön
+          Dashboard'a Dön
         </button>
       </div>
     );
   }
 
-  // Renk belirleme
-  const getScoreColor = (score) => {
-    if (score >= 80) return "text-green-400";
-    if (score >= 50) return "text-yellow-400";
-    return "text-red-400";
-  };
+  // Verileri güvenli şekilde al
+  const overallScore = Number(result.overall_score) || 0;
+  const eyeContact = Number(result.eye_contact_score) || 0;
+  const bodyLanguage = Number(result.body_language_score) || 0;
+  const wpm = Number(result.wpm) || 0;
+  const fillerCount = Number(result.filler_count) || 0;
+  const fillerDetails = result.filler_breakdown || "Yok";
+  const monotony = Number(result.monotony_score) || 0;
 
-  // Emojiyi metinden ayıran temizleme fonksiyonu (Kırmızı çizgiyi bu çözer)
-  const formatRecommendation = (text) => {
-    // Emojileri ve baştaki boşlukları siler
-    return text.replace(
-      /^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/u,
-      ""
-    );
-  };
-
-  const overallScore = result.overall_score || 0;
-  const eyeScore =
-    result.video_metrics?.eye_contact?.overall_eye_contact_score || 0;
-  const bodyScore =
-    result.video_metrics?.body_language?.overall_body_language_score || 0;
-
-  const wpm = result.audio_metrics?.speaking_rate?.words_per_minute || 0;
-  const fillers = result.audio_metrics?.filler_words?.count || 0;
+  // Renk belirleme fonksiyonları
+  const getScoreColor = (score) =>
+    score >= 80
+      ? "text-emerald-400"
+      : score >= 60
+      ? "text-yellow-400"
+      : "text-red-400";
+  const getProgressColor = (score) =>
+    score >= 80
+      ? "bg-emerald-500"
+      : score >= 60
+      ? "bg-yellow-500"
+      : "bg-red-500";
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white font-sans p-8 overflow-y-auto">
-      <header className="max-w-4xl mx-auto flex justify-between items-center mb-10">
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-          Analiz Raporun 📝
-        </h1>
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm border border-slate-700 transition-colors"
-        >
-          ← Yeni Analiz Yap
-        </button>
-      </header>
+    <div className="h-full w-full bg-[#09090b] text-white font-sans overflow-y-auto selection:bg-indigo-500/30 custom-scrollbar relative animate-fade-in">
+      <div className="max-w-4xl mx-auto p-4 md:p-8 relative z-10 pb-24">
+        <header className="flex items-center justify-between mb-8">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+          >
+            <FiArrowLeft /> Geri Dön
+          </button>
+        </header>
 
-      <div className="max-w-4xl mx-auto grid gap-8">
-        {/* GENEL SKOR */}
-        <div className="bg-slate-800/50 border border-slate-700 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
+        {/* 1. AI KOÇ GÖRÜŞÜ */}
+        <AIInsightCard analysisResults={result} />
 
-          <div>
-            <h2 className="text-xl text-slate-400 mb-2">
-              Genel Sunum Performansı
-            </h2>
-            <div
-              className={`text-6xl font-bold ${getScoreColor(overallScore)}`}
-            >
-              {overallScore}
-              <span className="text-2xl text-slate-500">/100</span>
-            </div>
-            <p className="text-slate-400 mt-2 max-w-md">
-              {overallScore > 75
-                ? "Harika iş çıkardın! Sunumun etkileyici ve profesyonel duruyor."
-                : "Güzel bir başlangıç. Aşağıdaki tavsiyelerle daha iyi olabilirsin."}
-            </p>
-          </div>
-
-          <div className="w-full md:w-1/2 space-y-4">
+        {/* 2. SKOR KARTI */}
+        <div className="bg-[#121217] border border-white/10 rounded-3xl p-8 mb-6 relative overflow-hidden mt-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
             <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span>Göz Teması</span>
-                <span className={getScoreColor(eyeScore)}>{eyeScore}%</span>
-              </div>
-              <div className="w-full bg-slate-700 rounded-full h-2.5">
-                <div
-                  className="bg-blue-500 h-2.5 rounded-full transition-all duration-1000"
-                  style={{ width: `${eyeScore}%` }}
-                ></div>
-              </div>
+              <h1 className="text-3xl font-bold text-white mb-2">
+                Analiz Raporu 📊
+              </h1>
+              <p className="text-gray-400 max-w-md">
+                {overallScore >= 80
+                  ? "Harika iş çıkardın! Sahne senin."
+                  : "Gelişime açıksın, pratikle mükemmelleşeceksin."}
+              </p>
             </div>
-
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span>Beden Dili & Duruş</span>
-                <span className={getScoreColor(bodyScore)}>{bodyScore}%</span>
-              </div>
-              <div className="w-full bg-slate-700 rounded-full h-2.5">
-                <div
-                  className="bg-purple-500 h-2.5 rounded-full transition-all duration-1000"
-                  style={{ width: `${bodyScore}%` }}
-                ></div>
+            <div className="relative w-32 h-32 flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="56"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  className="text-white/5"
+                />
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="56"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  strokeDasharray={351}
+                  strokeDashoffset={351 - (351 * overallScore) / 100}
+                  className={`${
+                    overallScore >= 80 ? "text-emerald-500" : "text-yellow-500"
+                  } transition-all duration-1000 ease-out`}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute flex flex-col items-center">
+                <span className="text-4xl font-bold">{overallScore}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* DETAYLI METRİKLER */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-indigo-500/20 rounded-lg text-indigo-400">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  ></path>
-                </svg>
+        {/* 3. METRİKLER */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-24">
+          {/* GÖRSEL ANALİZ */}
+          <div className="bg-[#121217] border border-white/10 rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
+                <FiVideo size={24} />
               </div>
-              <h3 className="text-lg font-semibold">Konuşma Hızı</h3>
+              <h3 className="text-lg font-bold">Görsel Analiz</h3>
             </div>
-            <div className="text-3xl font-bold text-white mb-1">
-              {wpm}{" "}
-              <span className="text-sm text-slate-500 font-normal">
-                kelime/dk
-              </span>
-            </div>
-            <p className="text-sm text-slate-400">
-              {wpm > 160
-                ? "Çok hızlı konuşuyorsun."
-                : wpm < 100
-                ? "Biraz yavaş konuşuyorsun."
-                : "İdeal bir hızdasın! ⭐"}
-            </p>
-          </div>
-
-          <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-pink-500/20 rounded-lg text-pink-400">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-                  ></path>
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold">Dolgu Kelimeler</h3>
-            </div>
-            <div className="text-3xl font-bold text-white mb-1">
-              {fillers}{" "}
-              <span className="text-sm text-slate-500 font-normal">adet</span>
-            </div>
-            <p className="text-sm text-slate-400">
-              {fillers === 0
-                ? "Harika! Hiç dolgu kelime yok."
-                : "Konuşma akıcılığı için 'eee'leri azaltabilirsin."}
-            </p>
-          </div>
-        </div>
-
-        {/* TAVSİYELER */}
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-slate-700">
-          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-            🤖 Yapay Zeka Tavsiyeleri
-          </h3>
-
-          <div className="space-y-4">
-            {result.recommendations && result.recommendations.length > 0 ? (
-              result.recommendations.map((rec, index) => (
-                <div
-                  key={index}
-                  className="flex gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50"
-                >
-                  {/* Emojiyi burada gösteriyoruz */}
-                  <span className="text-xl">
-                    {rec.includes("🔴")
-                      ? "🔴"
-                      : rec.includes("🟡")
-                      ? "🟡"
-                      : rec.includes("🟢")
-                      ? "🟢"
-                      : "💡"}
+            <div className="space-y-6">
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-400">Göz Teması</span>
+                  <span className={getScoreColor(eyeContact)}>
+                    {eyeContact}/100
                   </span>
-                  {/* Metni temizleyip gösteriyoruz */}
-                  <p className="text-slate-300">{formatRecommendation(rec)}</p>
                 </div>
-              ))
-            ) : (
-              <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400">
-                Mükemmel! Yapay zeka eleştirecek bir nokta bulamadı. Harikasın!
-                🎉
+                <div className="h-2 bg-white/5 rounded-full">
+                  <div
+                    className={`h-full ${getProgressColor(
+                      eyeContact
+                    )} rounded-full`}
+                    style={{ width: `${eyeContact}%` }}
+                  ></div>
+                </div>
               </div>
-            )}
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-400">Beden Dili</span>
+                  <span className={getScoreColor(bodyLanguage)}>
+                    {bodyLanguage}/100
+                  </span>
+                </div>
+                <div className="h-2 bg-white/5 rounded-full">
+                  <div
+                    className={`h-full ${getProgressColor(
+                      bodyLanguage
+                    )} rounded-full`}
+                    style={{ width: `${bodyLanguage}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SES ANALİZİ */}
+          <div className="bg-[#121217] border border-white/10 rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl">
+                <FiMic size={24} />
+              </div>
+              <h3 className="text-lg font-bold">Ses Analizi</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-white/5 p-4 rounded-xl text-center">
+                <div className="text-2xl font-bold text-white mb-1">
+                  {Math.round(wpm)}
+                </div>
+                <div className="text-xs text-gray-500 uppercase">Kelime/Dk</div>
+              </div>
+
+              <div className="bg-white/5 p-4 rounded-xl text-center flex flex-col justify-center">
+                <div className="text-2xl font-bold text-white mb-1">
+                  {fillerCount}
+                </div>
+                <div className="text-xs text-gray-500 uppercase mb-1">
+                  Dolgu Kelime
+                </div>
+                {fillerCount > 0 && (
+                  <div className="text-[10px] text-yellow-400 font-mono mt-1 px-2 py-1 bg-yellow-500/10 rounded-lg break-words">
+                    {fillerDetails}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-gray-400">Ses Enerjisi / Canlılık</span>
+                <span className={getScoreColor(monotony)}>{monotony}/100</span>
+              </div>
+              <div className="h-2 bg-white/5 rounded-full">
+                <div
+                  className={`h-full ${getProgressColor(
+                    monotony
+                  )} rounded-full`}
+                  style={{ width: `${monotony}%` }}
+                ></div>
+              </div>
+            </div>
           </div>
         </div>
+
+        <AICoachWidget analysisResults={result} />
       </div>
     </div>
   );

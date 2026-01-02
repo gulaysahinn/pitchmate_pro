@@ -1,138 +1,144 @@
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-import oracledb
-import hashlib
-import jwt
-import datetime
-from typing import Optional
-from fastapi.security import OAuth2PasswordBearer
-import os  # <--- EKLENDİ
-from dotenv import load_dotenv # <--- EKLENDİ
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from sqlalchemy.orm import Session
+from fastapi.security import OAuth2PasswordRequestForm
+import shutil
+import os
+import uuid # Dosya isimleri çakışmasın diye
 
-# .env dosyasını yükle (Backend klasöründe arar)
-load_dotenv()
+from app import schemas, models, database
+from app.utils.security import hash_password, verify_password, create_access_token
+from app.oauth2 import get_current_user
 
-router = APIRouter(prefix="/auth", tags=["Auth"])
+router = APIRouter(
+    prefix="/auth",
+    tags=["Authentication"]
+)
 
-# --- AYARLAR (.env dosyasından çekiliyor) ---
-SECRET_KEY = os.getenv("SECRET_KEY", "varsayilan_gizli_anahtar") # .env'de yoksa varsayılanı kullanır
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+# 1. KAYIT OL
+@router.post("/register", response_model=schemas.UserOut)
+def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
+    existing_user = db.query(models.User).filter(
+        (models.User.username == user.username) | (models.User.email == user.email)
+    ).first()
+    
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Kullanıcı adı veya email zaten kayıtlı.")
 
-# DB Bağlantı Bilgileri (GÜNCELLENDİ) 🚀
-DB_CONFIG = {
-    "user": os.getenv("DB_USER", "system"),         # .env'den DB_USER oku
-    "password": os.getenv("DB_PASSWORD"),           # .env'den DB_PASSWORD oku
-    "dsn": os.getenv("DB_DSN", "localhost/XE")      # .env'den DB_DSN oku
-}
+    hashed_password = hash_password(user.password)
 
-# ... Dosyanın geri kalanı (modeller, fonksiyonlar, login/register) AYNI KALSIN ...
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
-
-# --- MODELLER (GÜNCELLENDİ: Esnek Yapı) ---
-class UserRegister(BaseModel):
-    username: str
-    email: str
-    password: str
-
-class UserLogin(BaseModel):
-    # Hem username hem email opsiyonel yapıldı, hangisi gelirse onu kullanacağız
-    username: Optional[str] = None
-    email: Optional[str] = None
-    password: str
-
-# --- YARDIMCI FONKSİYONLAR ---
-def get_db_connection():
-    return oracledb.connect(**DB_CONFIG)
-
-def verify_password(plain_password, hashed_password):
-    return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
-
-def get_password_hash(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def create_access_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail="Kimlik doğrulanamadı",
-        headers={"WWW-Authenticate": "Bearer"},
+    new_user = models.User(
+        username=user.username,
+        email=user.email,
+        hashed_password=hashed_password
     )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        user_id: int = payload.get("id")
-        if username is None or user_id is None:
-            raise credentials_exception
-        return {"username": username, "user_id": user_id}
-    except jwt.PyJWTError:
-        raise credentials_exception
 
-# --- ENDPOINTLER ---
-@router.post("/register")
-def register(user: UserRegister):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        # Önce kullanıcı var mı diye kontrol edelim
-        cursor.execute("SELECT count(*) FROM users WHERE username = :1 OR email = :2", (user.username, user.email))
-        if cursor.fetchone()[0] > 0:
-             raise HTTPException(status_code=400, detail="Bu kullanıcı adı veya email zaten kayıtlı.")
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
 
-        hashed_pw = get_password_hash(user.password)
-        cursor.execute("INSERT INTO users (username, email, password) VALUES (:1, :2, :3)",
-                       (user.username, user.email, hashed_pw))
-        conn.commit()
-        return {"message": "Kayıt başarılı! Giriş yapabilirsiniz."}
-    except Exception as e:
-        print(f"Kayıt Hatası: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        cursor.close()
-        conn.close()
+    return new_user
 
-@router.post("/login")
-def login(user: UserLogin):
-    # 1. Gelen veriyi kontrol et (Hata ayıklama için print)
-    print(f"Giriş Denemesi: {user}")
+# 2. GİRİŞ YAP
+@router.post("/login", response_model=schemas.Token)
+def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.username == user_credentials.username).first()
 
-    # Username veya Email'den en az biri dolu olmalı
-    identifier = user.username or user.email
-    if not identifier:
-        raise HTTPException(status_code=422, detail="Kullanıcı adı veya Email girilmelidir.")
+    if not user:
+        raise HTTPException(status_code=403, detail="Geçersiz kimlik bilgileri")
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        # 2. Hem kullanıcı adına hem e-postaya bakıyoruz
-        cursor.execute("SELECT id, username, password FROM users WHERE username = :1 OR email = :1", (identifier,identifier))
-        result = cursor.fetchone()
+    if not verify_password(user_credentials.password, user.hashed_password):
+        raise HTTPException(status_code=403, detail="Geçersiz kimlik bilgileri")
+
+    access_token = create_access_token(data={"user_id": user.id})
+
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "user": user 
+    }
+
+# 3. ŞİFRE DEĞİŞTİR
+@router.post("/change-password")
+def change_password(
+    request: schemas.ChangePasswordRequest, 
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    if not verify_password(request.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Mevcut şifreniz yanlış.")
+
+    current_user.hashed_password = hash_password(request.new_password)
+    db.commit()
+
+    return {"message": "Şifreniz başarıyla güncellendi."}
+
+# 4. AVATAR YÜKLE
+@router.post("/upload-avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    # Klasör yoksa oluştur
+    UPLOAD_DIR = "uploads/avatars"
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    
+    # Dosya adını güvenli hale getir
+    file_extension = file.filename.split(".")[-1]
+    # UUID kullanarak benzersiz isim yapıyoruz (Browser cache sorununu çözer)
+    unique_filename = f"user_{current_user.id}_{uuid.uuid4()}.{file_extension}"
+    file_path = f"{UPLOAD_DIR}/{unique_filename}"
+    
+    # Dosyayı kaydet
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
         
-        if result is None:
-            raise HTTPException(status_code=400, detail="Kullanıcı bulunamadı.")
-            
-        db_id, db_username, db_password = result
-        
-        if not verify_password(user.password, db_password):
-            raise HTTPException(status_code=400, detail="Şifre hatalı.")
-            
-        # Token oluştur
-        access_token = create_access_token(data={"sub": db_username, "id": db_id})
-        
-        return {
-            "access_token": access_token, 
-            "token_type": "bearer",
-            "user": {"username": db_username} 
-        }
-    except Exception as e:
-        print(f"Login Hatası: {e}")
-        raise e
-    finally:
-        cursor.close()
-        conn.close()
+    # URL formatı (Windows için ters slash düzeltmesi yapıldı)
+    # Örn: http://localhost:8000/uploads/avatars/user_1_...jpg
+    clean_path = file_path.replace("\\", "/") 
+    avatar_url = f"http://localhost:8000/{clean_path}"
+    
+    current_user.avatar = avatar_url # Modelindeki alan adı 'avatar' ise
+    db.commit()
+    
+    return {"avatar": avatar_url, "message": "Profil fotoğrafı güncellendi."}
+
+# 5. PROFİL GÜNCELLE (YENİ EKLENDİ)
+@router.put("/update-profile")
+def update_profile(
+    user_data: schemas.UserUpdate, # Bu şemayı schemas.py'a eklemelisin
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    # Eğer kullanıcı adı değiştirilmek isteniyorsa, başkası kullanıyor mu bak
+    if user_data.username and user_data.username != current_user.username:
+        existing = db.query(models.User).filter(models.User.username == user_data.username).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Bu kullanıcı adı zaten kullanımda.")
+        current_user.username = user_data.username
+
+    # Email değiştirilmek isteniyorsa
+    if user_data.email and user_data.email != current_user.email:
+        existing_email = db.query(models.User).filter(models.User.email == user_data.email).first()
+        if existing_email:
+             raise HTTPException(status_code=400, detail="Bu e-posta zaten kullanımda.")
+        current_user.email = user_data.email
+         
+    db.commit()
+    
+    return {
+        "username": current_user.username,
+        "email": current_user.email,
+        "avatar": current_user.avatar
+    }
+
+# 6. HESAP SİL (YENİ EKLENDİ)
+@router.delete("/delete-account")
+def delete_account(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    # Kullanıcıyı sil
+    db.delete(current_user)
+    db.commit()
+    return {"message": "Hesap kalıcı olarak silindi."}

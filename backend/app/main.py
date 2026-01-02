@@ -1,32 +1,45 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-# BURAYA EKLENDİ: dashboard router'ını import et
-from app.routers import auth, analysis, dashboard 
+from fastapi.staticfiles import StaticFiles
 import os
 
-app = FastAPI(title="PitchMate AI Backend")
+# Veritabanı ve Modeller
+from app import models, database
+from app.routers import auth, analysis, dashboard, chat  # Chat router'ı ekledik
 
-# --- CORS AYARLARI ---
+# Tabloları oluştur (yoksa)
+models.Base.metadata.create_all(bind=database.engine)
+
+# --- KRİTİK NOKTA: 'app' DEĞİŞKENİ BURADA TANIMLANIYOR ---
+app = FastAPI()
+
+# CORS Ayarları (Frontend ile haberleşme için)
 origins = [
-    "http://localhost:5173",
+    "http://localhost:5173",  # React varsayılan portu
     "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "*"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Geliştirme aşamasında "*" yapabilirsin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Router'ları bağla
+# Klasörleri Oluştur
+os.makedirs("uploads/avatars", exist_ok=True)
+os.makedirs("uploads/videos", exist_ok=True)
+
+# Statik Dosyalar (Videolara ve resimlere erişim için)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+# Router'ları (Sayfaları) Dahil Et
 app.include_router(auth.router)
 app.include_router(analysis.router)
-app.include_router(dashboard.router) # <-- BURAYA EKLENDİ
+app.include_router(dashboard.router)
+app.include_router(chat.router)
 
 @app.get("/")
 def read_root():
-    return {"status": "Backend Çalışıyor 🚀"}
+    return {"message": "PitchMate API Çalışıyor! 🚀"}
