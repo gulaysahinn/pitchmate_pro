@@ -58,3 +58,14 @@ body {
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* index.css içine eklenebilir */
+
+/* Gizli Scrollbar (Sadece ihtiyaç olduğunda görünsün istersen) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

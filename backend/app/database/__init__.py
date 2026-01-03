@@ -1,22 +1,52 @@
+import os
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
+from dotenv import load_dotenv
 
-# Veritabanı Dosyası (Proje klasöründe sql_app.db oluşur)
-SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
+# 1. .env DOSYASINI BUL VE YÜKLE
+# Dosyanın yerini sağlama alıyoruz (backend klasöründe arıyoruz)
+current_dir = os.path.dirname(os.path.abspath(__file__)) # app/
+backend_dir = os.path.dirname(current_dir) # backend/
+env_path = os.path.join(backend_dir, '.env')
 
-# Engine oluşturma (SQLite için check_same_thread gerekli)
+# Eğer backend klasöründe yoksa bir üstüne bak
+if not os.path.exists(env_path):
+    backend_dir = os.path.dirname(backend_dir)
+    env_path = os.path.join(backend_dir, '.env')
+
+load_dotenv(env_path)
+
+# 2. VERİTABANI BİLGİLERİNİ AL
+db_user = os.getenv("DB_USER")
+db_password = os.getenv("DB_PASSWORD")
+db_dsn = os.getenv("DB_DSN")  # Örn: localhost:1521/XEPDB1
+
+# Güvenlik kontrolü
+if not db_user or not db_password or not db_dsn:
+    raise ValueError("❌ .env dosyasında DB bilgileri eksik! (DB_USER, DB_PASSWORD, DB_DSN)")
+
+# 3. SQLALCHEMY BAĞLANTI ADRESİNİ OLUŞTUR
+# Format: oracle+oracledb://KULLANICI:SIFRE@DSN
+SQLALCHEMY_DATABASE_URL = f"oracle+oracledb://{db_user}:{db_password}@{db_dsn}"
+
+# 4. ENGINE (MOTOR) OLUŞTUR
+# Bu motor, uygulamanın veritabanı ile konuşmasını sağlar.
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL,
+    # Oracle için büyük/küçük harf duyarlılığı gibi ayarlar gerekebilir
+    max_identifier_length=128
 )
 
-# Oturum (Session) oluşturucu
+# 5. OTURUM (SESSION) OLUŞTURUCU
+# Her istek geldiğinde veritabanında yeni bir 'oturum' açar.
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Modellerin miras alacağı temel sınıf (Base)
+# 6. MODEL TABANI (BASE)
+# models.py dosyasındaki User, Project gibi sınıflar bundan türetilir.
 Base = declarative_base()
 
-# Dependency (Diğer dosyalarda db = Depends(get_db) olarak kullanılan fonksiyon)
+# 7. DEPENDENCY (BAĞIMLILIK ENJEKSİYONU)
+# FastAPI rotalarında (auth.py vb.) "db: Session = Depends(get_db)" dediğinde bu çalışır.
 def get_db():
     db = SessionLocal()
     try:

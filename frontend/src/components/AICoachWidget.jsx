@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { FiSend, FiCpu, FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import api from "../services/api"; // 👇 fetch yerine api kullanıyoruz
+import api from "../services/api";
 
 const AICoachWidget = ({ analysisResults }) => {
   const [isOpen, setIsOpen] = useState(false);

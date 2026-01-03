@@ -3,19 +3,23 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 // Layout
-import Layout from "./components/Layout";
+import Layout from "./components/MainLayout";
 
 // Sayfalar
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import Settings from "./pages/Settings";
 import AnalysisResult from "./pages/AnalysisResult";
 import AnalysisHistory from "./pages/AnalysisHistory";
 import Profile from "./pages/profile";
 import Landing from "./pages/Landing";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import PracticeRoom from "./pages/PracticeRoom";
+
+// 🟢 YENİ EKLENEN SAYFALAR
+import Projects from "./pages/Projects";
+import AICoach from "./pages/AICoach";
 
 function App() {
   return (
@@ -23,51 +27,27 @@ function App() {
       <ToastContainer position="top-right" theme="dark" autoClose={3000} />
 
       <Routes>
-        {/* PUBLIC ROUTES */}
+        {/* --- 1. PUBLIC ROUTES --- */}
         <Route path="/" element={<Landing />} />
-
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* PRIVATE ROUTES (Layout ile Sidebar Dahil) */}
-        <Route
-          path="/dashboard"
-          element={
-            <Layout>
-              <Dashboard />
-            </Layout>
-          }
-        />
+        {/* --- 2. PROTECTED ROUTES (Sidebar Olan Sayfalar) --- */}
+        <Route element={<Layout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/history" element={<AnalysisHistory />} />
+          <Route path="/analysis/result" element={<AnalysisResult />} />
 
-        <Route
-          path="/profile"
-          element={
-            <Layout>
-              <Profile />
-            </Layout>
-          }
-        />
+          {/* 🟢 YENİ ROTALAR BURAYA EKLENDİ */}
+          <Route path="/projects" element={<Projects />} />
+          <Route path="/ai-coach" element={<AICoach />} />
+        </Route>
 
-        <Route
-          path="/analysis/result"
-          element={
-            <Layout>
-              <AnalysisResult />
-            </Layout>
-          }
-        />
-
-        {/* --- 2. YENİ ROTA BURASI --- */}
-        <Route
-          path="/history"
-          element={
-            <Layout>
-              <AnalysisHistory />
-            </Layout>
-          }
-        />
+        {/* --- 3. FULL SCREEN PAGES --- */}
+        <Route path="/practice/:id" element={<PracticeRoom />} />
       </Routes>
     </Router>
   );

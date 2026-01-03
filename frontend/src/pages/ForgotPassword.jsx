@@ -20,9 +20,9 @@ const ForgotPassword = () => {
 
     try {
       setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await forgotPassword(email);
 
-      setIsSent(true); // Başarılı ekranına geç
+      setIsSent(true);
       toast.success("Sıfırlama bağlantısı gönderildi! 📧");
     } catch (error) {
       const errorMsg = error.response?.data?.detail || "İşlem başarısız.";

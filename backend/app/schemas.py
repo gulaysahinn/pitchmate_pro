@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 class UserBase(BaseModel):
@@ -32,48 +32,61 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     id: Optional[str] = None
 
+# --- SUNUM ŞEMALARI ---
+
 class PresentationBase(BaseModel):
-    video_url: str
+    video_filename: str
     overall_score: float
     wpm: float
     filler_count: int
-    
-    # --- YENİ EKLENEN ---
     filler_breakdown: Optional[str] = None
-    # --------------------
-
     monotony_score: float = 0.0
     eye_contact_score: float
     body_language_score: float = 0.0 
     ai_feedback: Optional[str] = None
 
 class PresentationCreate(PresentationBase):
-    pass
+    project_id: Optional[int] = None # Kayıt sırasında proje ID'si gönderilebilmesi için
 
 class PresentationOut(PresentationBase):
     id: int
     created_at: datetime
     user_id: int
-    
-    # --- YENİ EKLENEN ---
-    filler_breakdown: Optional[str] = None 
-    # --------------------
+    # 🟢 KRİTİK: Frontend filtrelemesi için bu alanın burada tanımlı olması şarttır
+    project_id: Optional[int] = None 
 
     class Config:
         from_attributes = True
+
+# --- DİĞER ŞEMALAR ---
 
 class ChatRequest(BaseModel):
     message: str
     context: Optional[str] = None
 
-# ... (Mevcut kodların altına ekle)
-
-# Şifre Değiştirme Şeması
 class PasswordChange(BaseModel):
     current_password: str
     new_password: str
 
-# Profil Güncelleme Şeması (İsim/Email için)
 class UserUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
+
+# --- PROJE ŞEMALARI ---
+
+class ProjectBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+
+class ProjectCreate(ProjectBase):
+    pass
+
+class ProjectOut(ProjectBase):
+    id: int
+    created_at: datetime
+    user_id: int
+    session_count: int = 0 
+    average_score: float = 0.0 
+
+    class Config:
+        from_attributes = True

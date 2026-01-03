@@ -1,6 +1,13 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { FiVideo, FiActivity, FiSettings, FiLogOut } from "react-icons/fi";
+import {
+  FiVideo,
+  FiActivity,
+  FiSettings,
+  FiLogOut,
+  FiMessageSquare,
+  FiFolder,
+} from "react-icons/fi"; // Yeni ikonlar eklendi
 import { logout } from "../services/api";
 
 const Sidebar = () => {
@@ -8,44 +15,49 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
-  // --- KULLANICI BİLGİSİNİ ÇEK ---
-  useEffect(() => {
-    // LocalStorage'dan "user" anahtarını oku
+  const loadUser = () => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
       try {
         const userData = JSON.parse(userStr);
-        // Bazen user objesi { access_token: "...", user: {...} } içinde olabilir
-        // Bazen de direkt { username: "...", ... } olabilir. İkisini de destekleyelim.
         const actualUser = userData.user || userData;
         setUser(actualUser);
       } catch (e) {
         console.error("Sidebar kullanıcı verisi hatası:", e);
       }
     }
+  };
+
+  useEffect(() => {
+    loadUser();
+    window.addEventListener("storage", loadUser);
+    return () => window.removeEventListener("storage", loadUser);
   }, []);
 
   const handleLogout = (e) => {
     e.stopPropagation();
     if (window.confirm("Çıkış yapmak istediğine emin misin?")) {
-      logout(); // api.js içindeki logout'u kullan
+      logout();
       navigate("/login");
     }
   };
 
-  const handleSettingsClick = (e) => {
-    e.stopPropagation();
-    navigate("/profile"); // Ayarlar sayfası genellikle Profil'dir
-  };
-
+  // 🟢 GELİŞTİRİLMİŞ MENÜ ÖĞELERİ
   const menuItems = [
     { path: "/dashboard", name: "Stüdyo", icon: <FiVideo /> },
-    { path: "/history", name: "Analiz Geçmişi", icon: <FiActivity /> }, // Yolu düzelttim
+    { path: "/projects", name: "Projelerim", icon: <FiFolder /> }, // Proje grupları
+    { path: "/history", name: "Analiz Geçmişi", icon: <FiActivity /> }, // Tüm analizler
+    { path: "/ai-coach", name: "AI Coach", icon: <FiMessageSquare /> }, // Yapay zeka sohbet
   ];
 
   const username = user?.username || "Misafir";
-  // Avatar yoksa ismin baş harfini göster
   const avatarLetter = username.charAt(0).toUpperCase();
+
+  const getAvatarSrc = () => {
+    if (!user?.avatar) return null;
+    if (user.avatar.startsWith("http")) return user.avatar;
+    return `http://localhost:8000/${user.avatar.replace(/^\/+/, "")}`;
+  };
 
   return (
     <div className="w-64 h-screen bg-[#09090b] border-r border-white/5 flex flex-col fixed left-0 top-0 z-50">
@@ -60,9 +72,9 @@ const Sidebar = () => {
       </div>
 
       {/* MENÜ */}
-      <nav className="flex-1 py-6 px-4 space-y-2">
+      <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
         <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 mb-4">
-          Menü
+          Ana Menü
         </div>
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -72,7 +84,7 @@ const Sidebar = () => {
               onClick={() => navigate(item.path)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
                 isActive
-                  ? "bg-indigo-600/10 text-indigo-400 border border-indigo-600/20"
+                  ? "bg-indigo-600/10 text-indigo-400 border border-indigo-600/20 shadow-[0_0_15px_rgba(79,70,229,0.1)]"
                   : "text-gray-400 hover:bg-white/5 hover:text-white"
               }`}
             >
@@ -92,48 +104,58 @@ const Sidebar = () => {
       </nav>
 
       {/* ALT KISIM: PROFİL & AYARLAR */}
-      <div className="p-4 border-t border-white/5">
+      <div className="p-4 border-t border-white/5 bg-[#0c0c10]">
         <div
           onClick={() => navigate("/profile")}
           className="flex items-center justify-between p-3 rounded-xl bg-[#121217] border border-white/5 hover:border-indigo-500/30 hover:bg-[#1a1a20] transition-all cursor-pointer group"
         >
-          {/* Sol Taraf: Avatar ve İsim */}
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold border border-indigo-500/20 shrink-0 overflow-hidden">
+            <div className="w-9 h-9 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold border border-indigo-500/20 shrink-0 overflow-hidden relative">
               {user?.avatar ? (
                 <img
-                  src={user.avatar}
+                  src={getAvatarSrc()}
                   alt="avatar"
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                    e.target.nextSibling.style.display = "flex";
+                  }}
                 />
-              ) : (
-                <span>{avatarLetter}</span>
-              )}
+              ) : null}
+              <div
+                className="w-full h-full items-center justify-center bg-[#1c1c24]"
+                style={{ display: user?.avatar ? "none" : "flex" }}
+              >
+                {avatarLetter}
+              </div>
             </div>
+
             <div className="flex-1 overflow-hidden">
               <h4 className="text-sm font-bold text-white truncate group-hover:text-indigo-400 transition-colors">
                 {username}
               </h4>
-              <p className="text-[10px] text-gray-500">Free Plan</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-[10px] text-emerald-500/80 font-medium">
+                  Çevrimiçi
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Sağ Taraf: İkonlar */}
           <div className="flex items-center gap-1">
-            {/* Ayarlar İkonu */}
             <button
-              onClick={handleSettingsClick}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/profile");
+              }}
               className="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-              title="Ayarlar"
             >
               <FiSettings size={16} />
             </button>
-
-            {/* Çıkış İkonu */}
             <button
               onClick={handleLogout}
               className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-              title="Çıkış Yap"
             >
               <FiLogOut size={16} />
             </button>

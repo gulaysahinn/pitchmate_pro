@@ -5,7 +5,7 @@ import os
 
 # Veritabanı ve Modeller
 from app import models, database
-from app.routers import auth, analysis, dashboard, chat  # Chat router'ı ekledik
+from app.routers import auth, analysis, dashboard, chat, projects
 
 # Tabloları oluştur (yoksa)
 models.Base.metadata.create_all(bind=database.engine)
@@ -39,6 +39,7 @@ app.include_router(auth.router)
 app.include_router(analysis.router)
 app.include_router(dashboard.router)
 app.include_router(chat.router)
+app.include_router(projects.router)
 
 @app.get("/")
 def read_root():

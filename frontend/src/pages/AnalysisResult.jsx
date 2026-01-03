@@ -1,24 +1,41 @@
+import { useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import AIInsightCard from "../components/AIInsightCard"; // Bu dosyanın var olduğundan emin ol
-import AICoachWidget from "../components/AICoachWidget";
-import { FiArrowLeft, FiVideo, FiMic, FiAlertTriangle } from "react-icons/fi";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import { toast } from "react-toastify";
+import {
+  FiArrowLeft,
+  FiCheckCircle,
+  FiActivity,
+  FiEye,
+  FiMic,
+  FiDownload,
+  FiCpu,
+  FiZap,
+  FiAlertTriangle,
+  FiXOctagon,
+} from "react-icons/fi";
 
 const AnalysisResult = () => {
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const reportRef = useRef(null);
 
+  // Veriyi güvenli bir şekilde alıyoruz
   const result = location.state?.analysis_results;
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   if (!result) {
     return (
-      <div className="h-full w-full bg-[#09090b] text-white flex flex-col items-center justify-center p-4">
-        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
-          <FiAlertTriangle size={30} className="text-yellow-500" />
-        </div>
-        <h2 className="text-xl font-bold mb-2">Veri Bulunamadı</h2>
+      <div className="h-screen bg-[#09090b] text-white flex flex-col items-center justify-center p-4">
+        <FiAlertTriangle size={40} className="text-yellow-500 mb-4" />
+        <h2 className="text-xl font-bold">Veri Bulunamadı</h2>
         <button
           onClick={() => navigate("/dashboard")}
-          className="px-6 py-3 bg-indigo-600 rounded-xl font-medium"
+          className="mt-4 px-6 py-2 bg-indigo-600 rounded-xl"
         >
           Dashboard'a Dön
         </button>
@@ -26,186 +43,233 @@ const AnalysisResult = () => {
     );
   }
 
-  // Verileri güvenli şekilde al
-  const overallScore = Number(result.overall_score) || 0;
-  const eyeContact = Number(result.eye_contact_score) || 0;
-  const bodyLanguage = Number(result.body_language_score) || 0;
-  const wpm = Number(result.wpm) || 0;
-  const fillerCount = Number(result.filler_count) || 0;
-  const fillerDetails = result.filler_breakdown || "Yok";
-  const monotony = Number(result.monotony_score) || 0;
+  // --- VERİ HESAPLAMA (Backend & Oracle Uyumluluğu) ---
+  const overallScore = Math.round(result.overall_score || 0);
+  const eyeContact = Math.round(result.eye_contact_score || 0);
+  const wpm = Math.round(result.wpm || 0);
+  const fillerCount = result.filler_count || 0;
 
-  // Renk belirleme fonksiyonları
-  const getScoreColor = (score) =>
-    score >= 80
-      ? "text-emerald-400"
-      : score >= 60
-      ? "text-yellow-400"
-      : "text-red-400";
-  const getProgressColor = (score) =>
-    score >= 80
-      ? "bg-emerald-500"
-      : score >= 60
-      ? "bg-yellow-500"
-      : "bg-red-500";
+  // MONOTONLUK ANALİZİ: 100 = Çok Monoton, 0 = Canlı
+  const monotonyScore = Math.round(result.monotony_score || 0);
+
+  // Dinamik Etiketleme Mantığı
+  const getMonotonyStatus = (score) => {
+    if (score >= 70)
+      return {
+        label: "Çok Monoton",
+        color: "text-red-400",
+        border: "border-red-500/30",
+        bg: "bg-red-500/5",
+      };
+    if (score >= 35)
+      return {
+        label: "Normal",
+        color: "text-blue-400",
+        border: "border-blue-500/30",
+        bg: "bg-blue-500/5",
+      };
+    return {
+      label: "Canlı & Etkileyici",
+      color: "text-emerald-400",
+      border: "border-emerald-500/30",
+      bg: "bg-emerald-500/5",
+    };
+  };
+
+  const status = getMonotonyStatus(monotonyScore);
+
+  // Dolgu Kelime Temizliği
+  let fillerWords = "Mükemmel! Hiç dolgu kelime yok.";
+  if (fillerCount > 0 && result.filler_breakdown) {
+    fillerWords =
+      result.filler_breakdown
+        .replace(/[{}'"]/g, "")
+        .replace(/:/g, " (")
+        .replace(/,/g, "), ") + ")";
+  }
+
+  const aiFeedback = Array.isArray(result.ai_feedback)
+    ? result.ai_feedback
+    : [result.ai_feedback];
+
+  // PDF İndirme Fonksiyonu (Düzeltilmiş Hata Yakalama)
+  const handleDownload = async () => {
+    try {
+      toast.info("Rapor oluşturuluyor...");
+      const element = reportRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: "#09090b",
+        useCORS: true,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`PitchMate-Rapor-${Date.now()}.pdf`);
+      toast.success("Rapor indirildi! 📄");
+    } catch (downloadError) {
+      console.error("PDF Hatası:", downloadError);
+      toast.error("Rapor oluşturulurken bir hata oluştu.");
+    }
+  };
 
   return (
-    <div className="h-full w-full bg-[#09090b] text-white font-sans overflow-y-auto selection:bg-indigo-500/30 custom-scrollbar relative animate-fade-in">
-      <div className="max-w-4xl mx-auto p-4 md:p-8 relative z-10 pb-24">
-        <header className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-[#09090b] text-white p-4 md:p-8 pb-24 font-sans">
+      <div className="max-w-5xl mx-auto" ref={reportRef}>
+        {/* HEADER */}
+        <div className="flex justify-between items-center mb-8 px-2">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition-all text-sm"
           >
-            <FiArrowLeft /> Geri Dön
+            <FiArrowLeft /> <span>Geri Dön</span>
           </button>
-        </header>
-
-        {/* 1. AI KOÇ GÖRÜŞÜ */}
-        <AIInsightCard analysisResults={result} />
-
-        {/* 2. SKOR KARTI */}
-        <div className="bg-[#121217] border border-white/10 rounded-3xl p-8 mb-6 relative overflow-hidden mt-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">
-                Analiz Raporu 📊
-              </h1>
-              <p className="text-gray-400 max-w-md">
-                {overallScore >= 80
-                  ? "Harika iş çıkardın! Sahne senin."
-                  : "Gelişime açıksın, pratikle mükemmelleşeceksin."}
-              </p>
-            </div>
-            <div className="relative w-32 h-32 flex items-center justify-center">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle
-                  cx="64"
-                  cy="64"
-                  r="56"
-                  stroke="currentColor"
-                  strokeWidth="8"
-                  fill="transparent"
-                  className="text-white/5"
-                />
-                <circle
-                  cx="64"
-                  cy="64"
-                  r="56"
-                  stroke="currentColor"
-                  strokeWidth="8"
-                  fill="transparent"
-                  strokeDasharray={351}
-                  strokeDashoffset={351 - (351 * overallScore) / 100}
-                  className={`${
-                    overallScore >= 80 ? "text-emerald-500" : "text-yellow-500"
-                  } transition-all duration-1000 ease-out`}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute flex flex-col items-center">
-                <span className="text-4xl font-bold">{overallScore}</span>
-              </div>
-            </div>
+          <div className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Analiz Tamamlandı
           </div>
         </div>
 
-        {/* 3. METRİKLER */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-24">
-          {/* GÖRSEL ANALİZ */}
-          <div className="bg-[#121217] border border-white/10 rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
-                <FiVideo size={24} />
-              </div>
-              <h3 className="text-lg font-bold">Görsel Analiz</h3>
+        {/* 1. YAPAY ZEKA GERİ BİLDİRİMİ (EN ÜSTTE) */}
+        <div className="bg-gradient-to-br from-[#1a1a23] to-[#121217] border border-white/10 rounded-[2rem] p-8 mb-8 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-600"></div>
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/30">
+              <FiCpu size={24} />
             </div>
-            <div className="space-y-6">
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-400">Göz Teması</span>
-                  <span className={getScoreColor(eyeContact)}>
-                    {eyeContact}/100
-                  </span>
-                </div>
-                <div className="h-2 bg-white/5 rounded-full">
-                  <div
-                    className={`h-full ${getProgressColor(
-                      eyeContact
-                    )} rounded-full`}
-                    style={{ width: `${eyeContact}%` }}
-                  ></div>
+            <div>
+              <h2 className="text-xl font-bold">PitchMate AI Geri Bildirimi</h2>
+              <p className="text-xs text-indigo-400">
+                Yapay zeka tarafından hazırlanan iyileştirme önerileri.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {aiFeedback.map((text, i) => (
+              <div
+                key={i}
+                className="flex gap-4 p-5 bg-white/[0.03] rounded-2xl border border-white/5 hover:border-indigo-500/20 transition-all"
+              >
+                <FiZap className="text-yellow-400 shrink-0 mt-1" size={18} />
+                <div className="text-sm leading-relaxed text-gray-300">
+                  {text}
                 </div>
               </div>
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-400">Beden Dili</span>
-                  <span className={getScoreColor(bodyLanguage)}>
-                    {bodyLanguage}/100
-                  </span>
-                </div>
-                <div className="h-2 bg-white/5 rounded-full">
-                  <div
-                    className={`h-full ${getProgressColor(
-                      bodyLanguage
-                    )} rounded-full`}
-                    style={{ width: `${bodyLanguage}%` }}
-                  ></div>
-                </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 2. ANALİZ SKORLARI */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Genel Skor Kartı */}
+          <div className="bg-[#121217] border border-white/10 rounded-[2rem] p-10 flex flex-col items-center justify-center shadow-xl">
+            <span className="text-gray-500 text-[10px] font-black tracking-widest uppercase mb-8">
+              Performans Skoru
+            </span>
+            <div
+              className={`w-40 h-40 rounded-full border-[6px] flex items-center justify-center relative shadow-2xl ${
+                overallScore > 75
+                  ? "border-emerald-500/50 text-emerald-400"
+                  : "border-yellow-500/50 text-yellow-400"
+              }`}
+            >
+              <div className="text-center">
+                <span className="text-6xl font-black block leading-none">
+                  {overallScore}
+                </span>
+                <span className="text-[10px] opacity-40 font-bold uppercase tracking-widest">
+                  Skor
+                </span>
               </div>
             </div>
           </div>
 
-          {/* SES ANALİZİ */}
-          <div className="bg-[#121217] border border-white/10 rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl">
-                <FiMic size={24} />
+          {/* Sağ Grid (Metrikler) */}
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Göz Teması */}
+            <div className="bg-[#121217] p-6 rounded-3xl border border-white/5 group shadow-lg">
+              <div className="flex justify-between items-center mb-4 text-blue-400">
+                <FiEye size={20} />
+                <span className="text-2xl font-black text-white">
+                  %{eyeContact}
+                </span>
               </div>
-              <h3 className="text-lg font-bold">Ses Analizi</h3>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-white/5 p-4 rounded-xl text-center">
-                <div className="text-2xl font-bold text-white mb-1">
-                  {Math.round(wpm)}
-                </div>
-                <div className="text-xs text-gray-500 uppercase">Kelime/Dk</div>
-              </div>
-
-              <div className="bg-white/5 p-4 rounded-xl text-center flex flex-col justify-center">
-                <div className="text-2xl font-bold text-white mb-1">
-                  {fillerCount}
-                </div>
-                <div className="text-xs text-gray-500 uppercase mb-1">
-                  Dolgu Kelime
-                </div>
-                {fillerCount > 0 && (
-                  <div className="text-[10px] text-yellow-400 font-mono mt-1 px-2 py-1 bg-yellow-500/10 rounded-lg break-words">
-                    {fillerDetails}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-400">Ses Enerjisi / Canlılık</span>
-                <span className={getScoreColor(monotony)}>{monotony}/100</span>
-              </div>
-              <div className="h-2 bg-white/5 rounded-full">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                Göz Teması Oranı
+              </p>
+              <div className="w-full bg-white/5 h-1.5 mt-4 rounded-full overflow-hidden">
                 <div
-                  className={`h-full ${getProgressColor(
-                    monotony
-                  )} rounded-full`}
-                  style={{ width: `${monotony}%` }}
+                  className="bg-blue-500 h-full"
+                  style={{ width: `${eyeContact}%` }}
                 ></div>
               </div>
             </div>
+
+            {/* Ses Monotonluğu (Etiketli) */}
+            <div
+              className={`bg-[#121217] p-6 rounded-3xl border ${status.border} shadow-lg transition-all`}
+            >
+              <div
+                className={`flex justify-between items-center mb-2 ${status.color}`}
+              >
+                <FiMic size={20} />
+                <span className="text-2xl font-black text-white">
+                  %{monotonyScore}
+                </span>
+              </div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+                Ses Monotonluğu
+              </p>
+              <div
+                className={`inline-block px-3 py-1 rounded-lg ${status.bg} border border-white/5 text-[10px] font-bold uppercase ${status.color}`}
+              >
+                Durum: {status.label}
+              </div>
+            </div>
+
+            {/* Konuşma Hızı */}
+            <div className="bg-[#121217] p-6 rounded-3xl border border-white/5 shadow-lg">
+              <div className="flex justify-between items-center mb-2 text-emerald-400">
+                <FiActivity size={20} />
+                <span className="text-2xl font-black text-white">{wpm}</span>
+              </div>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                Kelime / Dakika
+              </p>
+            </div>
+
+            {/* Dolgu Kelimeler */}
+            <div className="bg-[#121217] p-6 rounded-3xl border border-white/5 shadow-lg">
+              <div className="flex justify-between items-center mb-2 text-red-400">
+                <FiXOctagon size={20} />
+                <span className="text-2xl font-black text-white">
+                  {fillerCount}
+                </span>
+              </div>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">
+                Dolgu Kelime
+              </p>
+              <div className="bg-white/5 px-3 py-2 rounded-xl border border-white/5">
+                <p className="text-[10px] text-red-300 italic leading-snug">
+                  {fillerWords}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <AICoachWidget analysisResults={result} />
+        {/* ALT BUTON */}
+        <div className="mt-12 flex justify-center">
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-3 bg-white text-black px-12 py-4 rounded-[1.2rem] font-black text-sm hover:bg-gray-200 transition-all active:scale-95 shadow-2xl"
+          >
+            <FiDownload size={18} />
+            <span>RAPORU PDF İNDİR</span>
+          </button>
+        </div>
       </div>
     </div>
   );
