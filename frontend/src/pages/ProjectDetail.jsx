@@ -23,21 +23,23 @@ const ProjectDetail = () => {
   // --- VERİ ÇEKME MANTIĞI ---
   useEffect(() => {
     const fetchProjectData = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        // 1. Proje detayını getir
         const projectData = await api.getProjectById(id);
         setProject(projectData);
 
-        try {
-          const presentationData = await api.getPresentationsByProjectId(id);
-          setPresentations(presentationData);
-        } catch (presError) {
-          console.warn("Bu projeye ait sunum bulunamadı.");
-          setPresentations([]);
-        }
+        const presentationData = await api
+          .getPresentationsByProjectId(id)
+          .catch(() => {
+            console.warn("Sunumlar bulunamadı, boş liste atanıyor.");
+            return [];
+          });
+
+        setPresentations(
+          Array.isArray(presentationData) ? presentationData : []
+        );
       } catch (error) {
-        console.error("Detay Yükleme Hatası:", error);
+        console.error("Proje yükleme ana hatası:", error);
         toast.error("Proje bilgileri yüklenemedi.");
         navigate("/projects");
       } finally {
@@ -124,7 +126,11 @@ const ProjectDetail = () => {
             <div
               key={item.id}
               // 🟢 ANALİZ SONUÇ SAYFASINA LİNK
-              onClick={() => navigate(`/analysis/result?id=${item.id}`)}
+              onClick={() =>
+                navigate(`/analysis/result?id=${item.id}`, {
+                  state: { analysis_results: item },
+                })
+              }
               className="group flex flex-col md:flex-row items-center justify-between p-6 bg-[#121217] border border-white/5 rounded-[2.2rem] hover:border-indigo-500/40 transition-all duration-300 cursor-pointer hover:bg-[#16161d] shadow-lg"
             >
               <div className="flex items-center gap-6 w-full md:w-auto">

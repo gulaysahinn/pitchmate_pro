@@ -59,24 +59,15 @@ const Register = () => {
 
   return (
     <div className="flex w-full min-h-screen bg-[#050507] font-sans relative text-white selection:bg-indigo-500/30">
+      <div className="absolute top-10 left-10 flex items-center gap-4 z-50 group cursor-pointer">
+        <img src="/logo.png" alt="Icon" className="w-48 h-32 object-contain" />
+      </div>
       {/* --- ARKA PLAN EFEKTLERİ (BLOBS) --- */}
       <div className="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
       <div className="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
 
       {/* --- SOL TARAF (GÖRSEL ALANI) - Sadece Büyük Ekranlar --- */}
       <div className="flex w-[55%] relative flex-col justify-center items-center z-10 bg-[#121217]/50 backdrop-blur-sm border-r border-white/5 p-12 h-screen sticky top-0">
-        <div
-          className="absolute top-12 left-12 cursor-pointer flex items-center gap-3 group"
-          onClick={() => navigate("/")}
-        >
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-300">
-            <span className="font-bold text-xl">P</span>
-          </div>
-          <span className="text-xl font-bold tracking-tight group-hover:text-indigo-400 transition-colors">
-            PitchMate
-          </span>
-        </div>
-
         <div className="w-full h-full flex items-center justify-center relative">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] h-[70%] bg-purple-500/10 blur-[80px] rounded-full pointer-events-none"></div>
           <img

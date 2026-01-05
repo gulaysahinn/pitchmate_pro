@@ -1,11 +1,11 @@
-import { useRef, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useRef, useEffect, useState } from "react"; // 🟢 useState eklendi
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom"; // 🟢 useSearchParams eklendi
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { toast } from "react-toastify";
+import * as api from "../services/api"; // 🟢 API import edildi
 import {
   FiArrowLeft,
-  FiCheckCircle,
   FiActivity,
   FiEye,
   FiMic,
@@ -14,19 +14,56 @@ import {
   FiZap,
   FiAlertTriangle,
   FiXOctagon,
+  FiLoader,
 } from "react-icons/fi";
 
 const AnalysisResult = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams(); // 🟢 URL'deki ?id= kısmını okumak için
   const reportRef = useRef(null);
 
-  // Veriyi güvenli bir şekilde alıyoruz
-  const result = location.state?.analysis_results;
+  // 🟢 State yönetimi: Önce location.state'e bak, yoksa null başla
+  const [result, setResult] = useState(
+    location.state?.analysis_results || null
+  );
+  const [loading, setLoading] = useState(!result);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+
+    // 🟢 Eğer state boşsa ve URL'de id varsa veriyi çek
+    const fetchPresentationData = async () => {
+      const presId = searchParams.get("id");
+      if (!result && presId) {
+        try {
+          setLoading(true);
+          // Not: api.js içinde getPresentationById fonksiyonunun olduğundan emin olun
+          const data = await api.getPresentationById(presId);
+          setResult(data);
+        } catch (error) {
+          console.error("Sunum yükleme hatası:", error);
+          toast.error("Analiz detayları yüklenemedi.");
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchPresentationData();
+  }, [searchParams, result]);
+
+  // 🟢 Yükleme Ekranı
+  if (loading) {
+    return (
+      <div className="h-screen bg-[#09090b] text-white flex flex-col items-center justify-center">
+        <FiLoader size={40} className="text-indigo-500 animate-spin mb-4" />
+        <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">
+          Veriler Hazırlanıyor...
+        </p>
+      </div>
+    );
+  }
 
   if (!result) {
     return (
@@ -48,8 +85,6 @@ const AnalysisResult = () => {
   const eyeContact = Math.round(result.eye_contact_score || 0);
   const wpm = Math.round(result.wpm || 0);
   const fillerCount = result.filler_count || 0;
-
-  // MONOTONLUK ANALİZİ: 100 = Çok Monoton, 0 = Canlı
   const monotonyScore = Math.round(result.monotony_score || 0);
 
   // Dinamik Etiketleme Mantığı

@@ -77,7 +77,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     <>
       <div
         className={`h-screen bg-[#09090b] border-r border-white/5 flex flex-col fixed left-0 top-0 z-50
-        transition-all duration-300 ${collapsed ? "w-20" : "w-64"}`}
+        transition-all duration-300 ${collapsed ? "w-23" : "w-64"}`}
       >
         {/* ================= LOGO ALANI ================= */}
         <div
@@ -175,7 +175,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                   <div className="flex items-center gap-1 mt-0.5">
                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                     <span className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">
-                      Online
+                      Çevrimiçi
                     </span>
                   </div>
                 </div>
