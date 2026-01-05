@@ -151,5 +151,17 @@ export const sendMessageToAI = async (message, context) => {
   const response = await api.post("/chat/", { message, context });
   return response.data;
 };
+// Belirli bir projenin detaylarını getirir
+export const getProjectById = async (projectId) => {
+  const response = await api.get(`/projects/${projectId}`); // Backend endpointinizle aynı olmalı
+  return response.data;
+};
+
+// Belirli bir projeye ait tüm sunum/analizleri getirir
+export const getPresentationsByProjectId = async (projectId) => {
+  // URL prefix'i /analysis olduğu için yolu buna göre düzeltiyoruz
+  const response = await api.get(`/analysis/project/${projectId}`);
+  return response.data;
+};
 
 export default api;

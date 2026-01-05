@@ -1,22 +1,29 @@
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "./Sidebar";
 
-const Layout = () => {
+const MainLayout = () => {
+  // 🟢 Durumu burada tanımlıyoruz
+  const [collapsed, setCollapsed] = useState(
+    localStorage.getItem("sidebarCollapsed") === "true"
+  );
+
   return (
-    <div className="flex w-full h-screen bg-[#09090b] text-white overflow-hidden">
-      {/* --- SIDEBAR KUTUSU --- */}
-      {/* "w-64" genişliği BURADA veriliyor. Eğer bu olmazsa Sidebar görünmez. */}
-      {/* "hidden md:block" kısmını şimdilik siliyorum ki her boyutta görünsün, test edelim */}
-      <aside className="w-64 h-full flex-shrink-0 border-r border-white/5">
-        <Sidebar />
-      </aside>
+    <div className="flex min-h-screen bg-[#09090b]">
+      {/* 🟢 setCollapsed prop olarak Sidebar'a gönderilmeli */}
+      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
 
-      {/* --- İÇERİK ALANI --- */}
-      <main className="flex-1 h-full overflow-y-auto relative scroll-smooth p-4 md:p-8">
-        <Outlet />
+      <main
+        className={`flex-1 transition-all duration-300 ${
+          collapsed ? "pl-20" : "pl-64"
+        }`}
+      >
+        <div className="p-4 md:p-8">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
 };
 
-export default Layout;
+export default MainLayout;

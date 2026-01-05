@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-// Servislerin hepsini 'api' takma adıyla içe aktararak isim çakışmalarını önlüyoruz
 import * as api from "../services/api";
 import { toast } from "react-toastify";
 import {
@@ -40,7 +39,7 @@ const Dashboard = () => {
           const userData = JSON.parse(userStr);
           setUsername(userData.username || "Kullanıcı");
         }
-        // api.js içindeki getProjects fonksiyonunu çağırır
+
         const data = await api.getProjects();
         setProjects(Array.isArray(data) ? data : []);
       } catch (err) {
@@ -91,7 +90,6 @@ const Dashboard = () => {
     setCreating(true);
     try {
       if (editingProject) {
-        // GÜNCELLEME (api.js'de updateProject tanımlı olmalı)
         await api.updateProject(
           editingProject.id,
           formData.title,
@@ -110,7 +108,6 @@ const Dashboard = () => {
         );
         toast.success("Konu güncellendi.");
       } else {
-        // YENİ OLUŞTURMA
         const newProject = await api.createProject(
           formData.title,
           formData.description
@@ -134,7 +131,6 @@ const Dashboard = () => {
       return;
 
     try {
-      // api.js'de deleteProject tanımlı olmalı
       await api.deleteProject(id);
       setProjects((prev) => prev.filter((p) => p.id !== id));
       toast.success("Proje silindi.");

@@ -16,10 +16,10 @@ import Landing from "./pages/Landing";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import PracticeRoom from "./pages/PracticeRoom";
-
-// 🟢 YENİ EKLENEN SAYFALAR
-import Projects from "./pages/Projects";
+import Projects from "./pages/projects";
+import ProjectDetail from "./pages/ProjectDetail";
 import AICoach from "./pages/AICoach";
+import Settings from "./pages/Settings";
 
 function App() {
   return (
@@ -40,14 +40,12 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/history" element={<AnalysisHistory />} />
           <Route path="/analysis/result" element={<AnalysisResult />} />
-
-          {/* 🟢 YENİ ROTALAR BURAYA EKLENDİ */}
           <Route path="/projects" element={<Projects />} />
+          <Route path="/projects/:id" element={<ProjectDetail />} />
           <Route path="/ai-coach" element={<AICoach />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/practice/:id" element={<PracticeRoom />} />
         </Route>
-
-        {/* --- 3. FULL SCREEN PAGES --- */}
-        <Route path="/practice/:id" element={<PracticeRoom />} />
       </Routes>
     </Router>
   );

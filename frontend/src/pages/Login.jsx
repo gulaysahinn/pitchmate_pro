@@ -109,7 +109,7 @@ const Login = () => {
           {/* LOGO / BAŞLIK */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 mb-2">
-              PitchMate
+              Resonix
             </h1>
             <p className="text-indigo-200/60 font-medium">
               AI Presentation Coach

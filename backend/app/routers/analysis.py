@@ -156,3 +156,20 @@ def delete_analysis(
     db.delete(presentation)
     db.commit()
     return {"message": "Başarıyla silindi."}
+
+# app/routers/analysis.py içine eklenecek:
+
+@router.get("/project/{project_id}", response_model=List[schemas.PresentationOut])
+def get_presentations_by_project(
+    project_id: int, 
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(oauth2.get_current_user)
+):
+    # Veritabanından sadece bu projeye ve bu kullanıcıya ait sunumları getir
+    presentations = db.query(models.Presentation)\
+        .filter(models.Presentation.project_id == project_id)\
+        .filter(models.Presentation.user_id == current_user.id)\
+        .order_by(models.Presentation.created_at.desc())\
+        .all()
+    
+    return presentations
