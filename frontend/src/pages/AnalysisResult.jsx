@@ -142,7 +142,7 @@ const AnalysisResult = () => {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`PitchMate-Rapor-${Date.now()}.pdf`);
+      pdf.save(`Resonix-Rapor-${Date.now()}.pdf`);
       toast.success("Rapor indirildi! 📄");
     } catch (downloadError) {
       console.error("PDF Hatası:", downloadError);
@@ -175,7 +175,7 @@ const AnalysisResult = () => {
               <FiCpu size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold">PitchMate AI Geri Bildirimi</h2>
+              <h2 className="text-xl font-bold">Resonix AI Geri Bildirimi</h2>
               <p className="text-xs text-indigo-400">
                 Yapay zeka tarafından hazırlanan iyileştirme önerileri.
               </p>

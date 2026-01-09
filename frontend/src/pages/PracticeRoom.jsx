@@ -312,7 +312,7 @@ const PracticeRoom = () => {
                 <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
                   <FiCpu size={20} />
                 </div>
-                <h3 className="font-bold text-white">Yapay Zeka Koçun</h3>
+                <h3 className="font-bold text-white">Resonix AI Tavsiyeleri</h3>
               </div>
 
               <div className="space-y-4">

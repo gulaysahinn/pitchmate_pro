@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 from typing import Dict, Tuple
 
-
 class EyeTracker:
     def __init__(self):
         # Yüz tespiti için OpenCV'nin hazır modelini kullanıyoruz

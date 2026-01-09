@@ -54,12 +54,13 @@ const Landing = () => {
             className="flex items-center gap-2 font-bold text-xl tracking-tight cursor-pointer"
             onClick={() => navigate("/")}
           >
-            <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-              <span className="text-lg">P</span>
+            <div className="absolute top-10 left-10 flex items-center gap-4 z-50 group cursor-pointer">
+              <img
+                src="/logo.png"
+                alt="Icon"
+                className="w-48 h-32 object-contain"
+              />
             </div>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-              PitchMate
-            </span>
           </div>
 
           {/* Butonlar (GÜNCELLENDİ) */}
@@ -246,20 +247,26 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2 font-bold text-white">
             <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-xs">
-              P
+              R
             </div>
-            PitchMate
+            <span>Resonix</span>
           </div>
 
           <p className="opacity-60">
-            &copy; 2026 PitchMate. Tüm hakları saklıdır.
+            &copy; 2026 Resonix. Tüm hakları saklıdır.
           </p>
 
           <div className="flex gap-4">
-            <a href="#" className="hover:text-white transition-colors">
+            <a
+              href="https://github.com/gulaysahinn"
+              className="hover:text-white transition-colors"
+            >
               <FiGithub size={20} />
             </a>
-            <a href="#" className="hover:text-white transition-colors">
+            <a
+              href="https://www.linkedin.com/in/gulaysahinn/"
+              className="hover:text-white transition-colors"
+            >
               <FiLinkedin size={20} />
             </a>
           </div>
